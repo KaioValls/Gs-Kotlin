@@ -19,4 +19,7 @@ interface DicaDao {
     @Delete
     fun delete(dica: Dica)
 
+    @Query("SELECT * FROM Dica where title like :searchQuery")
+    fun findDicaByTitle(searchQuery: String): LiveData<List<Dica>>
+
 }

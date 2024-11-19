@@ -1,98 +1,134 @@
 package com.global.kaiovalls_rm94685
 
 import android.os.Bundle
+import android.provider.CalendarContract.Colors
+import android.widget.SearchView
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
-import androidx.compose.material3.Button
-import androidx.compose.material3.Card
-import androidx.compose.material3.FloatingActionButton
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.Search
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.runtime.livedata.observeAsState
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.colorspace.Rgb
 import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.LiveData
-import androidx.room.Room
+import androidx.lifecycle.LifecycleCoroutineScope
+import androidx.lifecycle.lifecycleScope
 import com.global.kaiovalls_rm94685.model.Dica
-import com.global.kaiovalls_rm94685.repository.DicaDao
+import com.global.kaiovalls_rm94685.repository.DicaRepository
 import com.global.kaiovalls_rm94685.ui.theme.Kaiovalls_rm94685Theme
+import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
 
-    private lateinit var dicaDao : DicaDao; // aqui deve instanciar o banco de dados
+    private lateinit var dicaRepository: DicaRepository
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
 
-        val database = Room.databaseBuilder(
-            applicationContext,
-            DicaDatabase::class.java,
-            "dica_database"
-        ).build()
-        dicaDao = database.dicaDao()
-
+        dicaRepository = DicaRepository(applicationContext)
 
         setContent {
             Kaiovalls_rm94685Theme {
-                // A surface container using the 'background' color from the theme
-                Surface(modifier = Modifier.fillMaxSize(), color = MaterialTheme.colorScheme.background) {
+                Surface(modifier = Modifier.fillMaxSize(), color = Color.Green) {
                     // Kaio Valls e Luana Aquino
-                    DicasList()
-                    AddDicaButton {
-                        // Adicionar uma dica de exemplo
-                        addDica(Dica(title = "Nova Dica", descricao = "Descrição da Dica"))
-                    }
+
+                    DicasList(dicaRepository = dicaRepository, lifecycleScope)
                 }
             }
         }
     }
+}
+
+@Composable
+fun DicasList(dicaRepository: DicaRepository, lifecycleScope: LifecycleCoroutineScope) {
+    // Observando as dicas com LiveData
+    val dicaList by dicaRepository.getAllDicas().observeAsState(initial = emptyList())
+    var title by remember { mutableStateOf("") };
+    var descricao by remember { mutableStateOf("") };
+    var searchQuery by remember { mutableStateOf("") };
 
 
-    @Composable
-    fun DicasList() {
-        val dicaList by dicaDao.getAll().observeAsState(initial = emptyList())
+    Column (modifier = Modifier.padding(all = 10.dp)) {
+        TextField(
+            value = searchQuery,
+            onValueChange = {
+                searchQuery = it ;
+                dicaList = dicaRepository.searchDica(searchQuery).observeAsState(initial = emptyList());
+                            },
+            placeholder = { Text(text = "Pesquisa") },
+            leadingIcon = {
+                Icon(
+                    imageVector = Icons.Rounded.Search,
+                    contentDescription = ""
+                )
+            },
+
+            )
+        TextField(value = title ,
+            onValueChange = { title = it},
+            label = { Text(text = "Título")},
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 2.dp))
+
+        TextField(value = descricao ,
+            onValueChange = { descricao = it},
+            label = { Text(text = "Descricao")},
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 2.dp))
+        AddDicaButton {
+            lifecycleScope.launch {
+                dicaRepository.addDica(Dica(title = title, descricao = descricao))
+            }
+        }
 
         LazyColumn {
             items(dicaList) { dica ->
-                DicaCard(dica = dica)
+                DicaCard(dica = dica, dicaRepository, lifecycleScope)
             }
         }
     }
 
-    fun addDica(dica: Dica) {
-        dicaDao.insert(dica)
-    }
+}
+
+@Composable
+fun SearchView(searchQuery: String, onQueryChanged: (String) -> Unit){
+    TextField(value = searchQuery,
+        onValueChange = onQueryChanged,
+        placeholder = { Text(text = "Pesquisa")},
+        leadingIcon = {
+            Icon(
+                imageVector = Icons.Rounded.Search,
+                contentDescription = ""
+            )
+        },
+
+    )
 }
 
 @Composable
 fun AddDicaButton(onClick: () -> Unit) {
     Button(
         onClick = onClick,
-        modifier = Modifier.padding(16.dp).height(10.dp)
-
+        modifier = Modifier
+            .fillMaxWidth()
     ) {
-        Text("+")
+        Text("Adicionar Dica")
     }
 }
 
 @Composable
-fun DicaCard(dica: Dica) {
+fun DicaCard(dica: Dica, dicaRepository: DicaRepository, lifecycleScope: LifecycleCoroutineScope) {
     Card(modifier = Modifier.padding(bottom = 8.dp)) {
         Row(
             verticalAlignment = Alignment.CenterVertically,
@@ -115,6 +151,14 @@ fun DicaCard(dica: Dica) {
                     fontWeight = FontWeight.Normal
                 )
             }
+            Button(onClick = {
+                lifecycleScope.launch {
+                    dicaRepository.removeDica(dica = dica)
+                }
+            }) {
+                Text(text = "Remover")
+            }
         }
     }
 }
+
