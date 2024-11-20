@@ -51,55 +51,62 @@ class MainActivity : ComponentActivity() {
 @Composable
 fun DicasList(dicaRepository: DicaRepository, lifecycleScope: LifecycleCoroutineScope) {
     // Observando as dicas com LiveData
-    val dicaList by dicaRepository.getAllDicas().observeAsState(initial = emptyList())
-    var title by remember { mutableStateOf("") };
-    var descricao by remember { mutableStateOf("") };
-    var searchQuery by remember { mutableStateOf("") };
+    var title by remember { mutableStateOf("") }
+    var descricao by remember { mutableStateOf("") }
+    var searchQuery by remember { mutableStateOf("") }
 
+    // Use LiveData para pegar todas as dicas ou as filtradas, dependendo do searchQuery
+    val dicaList = if (searchQuery.isEmpty()) {
+        dicaRepository.getAllDicas().observeAsState(initial = emptyList())
+    } else {
+        dicaRepository.searchDica(searchQuery).observeAsState(initial = emptyList())
+    }
 
-    Column (modifier = Modifier.padding(all = 10.dp)) {
+    Column(modifier = Modifier.padding(all = 10.dp)) {
+        // Campo de pesquisa
         TextField(
             value = searchQuery,
-            onValueChange = {
-                searchQuery = it ;
-                dicaList = dicaRepository.searchDica(searchQuery).observeAsState(initial = emptyList());
-                            },
+            onValueChange = { searchQuery = it }, // Atualiza o texto de pesquisa
             placeholder = { Text(text = "Pesquisa") },
             leadingIcon = {
                 Icon(
                     imageVector = Icons.Rounded.Search,
-                    contentDescription = ""
+                    contentDescription = "Search"
                 )
-            },
+            }
+        )
 
-            )
-        TextField(value = title ,
-            onValueChange = { title = it},
-            label = { Text(text = "Título")},
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 2.dp))
+        // Campos para adicionar título e descrição
+        TextField(
+            value = title,
+            onValueChange = { title = it },
+            label = { Text(text = "Título") },
+            modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp)
+        )
 
-        TextField(value = descricao ,
-            onValueChange = { descricao = it},
-            label = { Text(text = "Descricao")},
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(bottom = 2.dp))
+        TextField(
+            value = descricao,
+            onValueChange = { descricao = it },
+            label = { Text(text = "Descrição") },
+            modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp)
+        )
+
+        // Botão para adicionar a dica
         AddDicaButton {
             lifecycleScope.launch {
                 dicaRepository.addDica(Dica(title = title, descricao = descricao))
             }
         }
 
+        // Exibindo as dicas em uma LazyColumn
         LazyColumn {
-            items(dicaList) { dica ->
+            items(dicaList.value) { dica ->
                 DicaCard(dica = dica, dicaRepository, lifecycleScope)
             }
         }
     }
-
 }
+
 
 @Composable
 fun SearchView(searchQuery: String, onQueryChanged: (String) -> Unit){
@@ -120,8 +127,10 @@ fun SearchView(searchQuery: String, onQueryChanged: (String) -> Unit){
 fun AddDicaButton(onClick: () -> Unit) {
     Button(
         onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
+        modifier = Modifier.fillMaxWidth(),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = Color(0xFF006400) // Verde escuro (Dark Green em hexadecimal)
+        )
     ) {
         Text("Adicionar Dica")
     }
@@ -155,7 +164,9 @@ fun DicaCard(dica: Dica, dicaRepository: DicaRepository, lifecycleScope: Lifecyc
                 lifecycleScope.launch {
                     dicaRepository.removeDica(dica = dica)
                 }
-            }) {
+            }),colors = ButtonDefaults.buttonColors(
+            containerColor = Color(0xFF006400) // Verde escuro (Dark Green em hexadecimal)
+            ) {
                 Text(text = "Remover")
             }
         }
