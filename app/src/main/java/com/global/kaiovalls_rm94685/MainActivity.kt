@@ -61,7 +61,7 @@ fun DicasList(dicaRepository: DicaRepository, lifecycleScope: LifecycleCoroutine
     }
 
     Column(modifier = Modifier.padding(all = 10.dp)) {
-        // Campo de pesquisa
+        Text(text = "Kaio Valls RM94685 \n Luana Aquino RM93074 \n Luana foi a aluna que teve que ir para o hospital")
         TextField(
             value = searchQuery,
             onValueChange = { searchQuery = it },
@@ -78,14 +78,18 @@ fun DicasList(dicaRepository: DicaRepository, lifecycleScope: LifecycleCoroutine
             value = title,
             onValueChange = { title = it },
             label = { Text(text = "Título") },
-            modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 2.dp)
         )
 
         TextField(
             value = descricao,
             onValueChange = { descricao = it },
             label = { Text(text = "Descrição") },
-            modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp)
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(bottom = 2.dp)
         )
         AddDicaButton {
             lifecycleScope.launch {
