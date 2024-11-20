@@ -50,12 +50,10 @@ class MainActivity : ComponentActivity() {
 
 @Composable
 fun DicasList(dicaRepository: DicaRepository, lifecycleScope: LifecycleCoroutineScope) {
-    // Observando as dicas com LiveData
     var title by remember { mutableStateOf("") }
     var descricao by remember { mutableStateOf("") }
     var searchQuery by remember { mutableStateOf("") }
 
-    // Use LiveData para pegar todas as dicas ou as filtradas, dependendo do searchQuery
     val dicaList = if (searchQuery.isEmpty()) {
         dicaRepository.getAllDicas().observeAsState(initial = emptyList())
     } else {
@@ -66,7 +64,7 @@ fun DicasList(dicaRepository: DicaRepository, lifecycleScope: LifecycleCoroutine
         // Campo de pesquisa
         TextField(
             value = searchQuery,
-            onValueChange = { searchQuery = it }, // Atualiza o texto de pesquisa
+            onValueChange = { searchQuery = it },
             placeholder = { Text(text = "Pesquisa") },
             leadingIcon = {
                 Icon(
@@ -76,7 +74,6 @@ fun DicasList(dicaRepository: DicaRepository, lifecycleScope: LifecycleCoroutine
             }
         )
 
-        // Campos para adicionar título e descrição
         TextField(
             value = title,
             onValueChange = { title = it },
@@ -90,15 +87,12 @@ fun DicasList(dicaRepository: DicaRepository, lifecycleScope: LifecycleCoroutine
             label = { Text(text = "Descrição") },
             modifier = Modifier.fillMaxWidth().padding(bottom = 2.dp)
         )
-
-        // Botão para adicionar a dica
         AddDicaButton {
             lifecycleScope.launch {
                 dicaRepository.addDica(Dica(title = title, descricao = descricao))
             }
         }
 
-        // Exibindo as dicas em uma LazyColumn
         LazyColumn {
             items(dicaList.value) { dica ->
                 DicaCard(dica = dica, dicaRepository, lifecycleScope)
@@ -164,8 +158,10 @@ fun DicaCard(dica: Dica, dicaRepository: DicaRepository, lifecycleScope: Lifecyc
                 lifecycleScope.launch {
                     dicaRepository.removeDica(dica = dica)
                 }
-            }),colors = ButtonDefaults.buttonColors(
-            containerColor = Color(0xFF006400) // Verde escuro (Dark Green em hexadecimal)
+            },
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color(0xFF006400) // Verde escuro (Dark Green em hexadecimal)
+                )
             ) {
                 Text(text = "Remover")
             }
